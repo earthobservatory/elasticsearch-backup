@@ -29,7 +29,7 @@ def backup(url, backup_root, user_indices_str="", user_query=""):
     }
 
     if user_query:
-        query = json.loads(query)
+        query = json.loads(user_query)
 
     # loop over each index and save settings, mapping, and docs
     for idx in indices:
