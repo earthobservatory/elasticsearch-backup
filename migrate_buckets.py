@@ -145,7 +145,7 @@ def main():
                         help="ElasticSearch URL to backup")
     parser.add_argument('directory', help="backup directory location")
     args = parser.parse_args()
-    migrate_buckets('ntu-hysds-dataset', 'ntu-hysds-dataset-test','/data/backup/grq_2.0_area_of_interest', 'bla', num_entries=1)
+    migrate_buckets('ntu-hysds-dataset', 'ntu-hysds-dataset-test','/data/backup/grq_v0.2_s1-fpm-pkg', 'bla', num_entries=1)
 
 
 if __name__ == "__main__":
