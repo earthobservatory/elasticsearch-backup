@@ -110,7 +110,9 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
 
             # 1. edit metadata elasticsearch
             j = json.loads(l)
-            print(json.dumps(j[id_key], indent=4))
+            print(json.dumps(j["browse_urls"], indent=4))
+            print(json.dumps(j["urls"], indent=4))
+
 
 
             # r = requests.put('http://localhost:9200/%s/%s/%s' % (idx, doctype, j[id_key]), data=l)
