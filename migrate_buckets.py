@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, requests, json, types, argparse, bz2, shutil
+import os, sys, requests, json, types, argparse, bz2, shutil, subprocess as sp
 
 
 def restore(backup_dir, id_key='id'):
@@ -109,33 +109,47 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                     doctype = dt
 
 
-            # 1. edit metadata elasticsearch
             dataset_md = json.loads(l)
+            old_prod_url = ""
+            new_prod_url = ""
 
-            print(json.dumps(dataset_md["browse_urls"], indent=4))
-            print(json.dumps(dataset_md["urls"], indent=4))
 
+            # 1. edit metadata elasticsearch
             for i in range(len(dataset_md["browse_urls"])):
-                dataset_md["browse_urls"][i]=dataset_md["browse_urls"][i].replace(from_bucket, to_bucket)
+                old_url = dataset_md["browse_urls"][i]
+                new_url = old_url.replace(from_bucket, to_bucket)
+                dataset_md["browse_urls"][i]=new_url
+                print("Updated url: \n %s to \n %s".format(old_url, new_url))
 
-            print(json.dumps(dataset_md["browse_urls"], indent=4))
+            for i in range(len(dataset_md["urls"])):
+                old_url = dataset_md["urls"][i]
+                new_url = old_url.replace(from_bucket, to_bucket)
+                dataset_md["urls"][i]=new_url
+                print("Updated url: \n %s to \n %s".format(old_url, new_url))
+
+                # get old and new product url
+                if "s3" in old_url:
+                    old_prod_url = old_url
+                    new_prod_url = new_url
+
+            # 2. aws s3 sync to transfer payload data across buckets
+            if not dry_run:
+                if old_prod_url:
+                    sp.check_call("aws s3 sync %s %s".format(old_prod_url, new_prod_url), shell=True)
+                else:
+                    raise RuntimeError("Problem getting s3 product url from ES metadata: %s". format(dataset_md[id_key]))
+
+            # 3. restore the updated indices in the target cluster grq
+            if not dry_run:
+                r = requests.put('http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key]), data=l)
+                if r.status_code != 201:
+                    print(r.status_code)
+                    print(r.json())
+                    continue
+                else: r.raise_for_status()
 
 
 
-
-
-
-
-            # r = requests.put('http://localhost:9200/%s/%s/%s' % (idx, doctype, j[id_key]), data=l)
-            # if r.status_code != 201:
-            #     print(r.status_code)
-            #     print(r.json())
-            #     continue
-            # else: r.raise_for_status()
-
-
-
-    # 2. aws s3 sync to transfer payload data across buckets
 
     # 3. restore the indices in the target cluster grq
 
