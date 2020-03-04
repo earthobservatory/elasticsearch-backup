@@ -116,7 +116,7 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
             print(json.dumps(dataset_md["urls"], indent=4))
 
             for item in dataset_md["browse_urls"]:
-                item.replace(from_bucket, to_bucket)
+                item=item.replace(from_bucket, to_bucket)
 
             print(json.dumps(dataset_md["browse_urls"], indent=4))
 
