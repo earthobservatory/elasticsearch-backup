@@ -104,6 +104,7 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
             # 3. restore the updated indices in the target cluster grq
             if not dry_run:
                 r = requests.put('http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key]), data=l)
+                print("Updated ES metadata: %s " % dataset_md[id_key])
                 if r.status_code != 201:
                     print(r.status_code)
                     print(r.json())
