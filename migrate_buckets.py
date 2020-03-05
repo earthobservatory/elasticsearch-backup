@@ -69,6 +69,10 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
 
 
             # 1. edit metadata elasticsearch
+            if len(dataset_md["urls"] == 0):
+                print("Skipping s3 bucket url update for %s since %s contains only ES metadata" % (
+                dataset_md[id_key], idx))
+
             for i in range(len(dataset_md["browse_urls"])):
                 old_url = dataset_md["browse_urls"][i]
                 new_url = old_url.replace(from_bucket, to_bucket)
@@ -90,6 +94,8 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
             if not dry_run:
                 if old_prod_url:
                     sp.check_call("aws s3 sync %s %s".format(old_prod_url, new_prod_url), shell=True)
+                elif len(dataset_md["urls"] == 0):
+                    print("Skipping aws s3 sync bucket migration for %s since %s contains only ES metadata" % (dataset_md[id_key],idx))
                 else:
                     raise RuntimeError("Problem getting s3 product url from ES metadata: %s". format(dataset_md[id_key]))
 
