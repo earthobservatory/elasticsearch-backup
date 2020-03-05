@@ -118,7 +118,7 @@ def main():
     args = parser.parse_args()
     dry_run = not args.force
     migrate_buckets(args.from_bucket, args.to_bucket,args.backup_dir, args.target_grq_ip,
-                    dry_run=dry_run, num_entries=args.num_entries)
+                    dry_run=dry_run, num_entries=int(args.num_entries))
 
 
 if __name__ == "__main__":
