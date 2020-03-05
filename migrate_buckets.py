@@ -76,12 +76,19 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
 
 
             dataset_md = json.loads(l)
+
+            # DO NOT backup opendataset!
+            tags = dataset_md["metadata"].get("tags", None)
+
+            if "opendataset" in tags:
+                print("Skipping opendataset data: %s, %s" % (dataset_md[id_key],dataset_md.get("browse_uels", [""])[0]))
+
             old_bucket_url = {"prod":"", "browse":""}
 
             # 1. edit metadata elasticsearch
             if len(dataset_md["urls"])  == 0:
                 print("Skipping s3 bucket url update for %s since %s contains only ES metadata" % (
-                dataset_md[id_key], idx))
+                dataset_md[id_key], ))
 
             for i in range(len(dataset_md["browse_urls"])):
                 old_url = dataset_md["browse_urls"][i]
