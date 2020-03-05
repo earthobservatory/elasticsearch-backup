@@ -69,14 +69,14 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
 
                     if "default" not in dt:
                         doctype = dt
-                        print("Updated datatype from mapping as %s " % doctype)
+                        print("Updated doctype from mapping as %s " % doctype)
 
                 if doctype is None:
                     raise RuntimeError("Failed to find doctype for index %s." % idx)
 
 
             dataset_md = json.loads(l)
-            old_prod_url = ""
+            old_bucket_url = {"prod":"", "browse":""}
 
             # 1. edit metadata elasticsearch
             if len(dataset_md["urls"])  == 0:
@@ -87,7 +87,11 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                 old_url = dataset_md["browse_urls"][i]
                 new_url = old_url.replace(from_bucket, to_bucket)
                 dataset_md["browse_urls"][i]=new_url
+
                 print("Updated url: \n %s to \n %s" % (old_url, new_url))
+                # get old browse url
+                if "s3" in old_url:
+                    old_bucket_url["browse"] = old_url
 
             for i in range(len(dataset_md["urls"])):
                 old_url = dataset_md["urls"][i]
@@ -95,25 +99,26 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                 dataset_md["urls"][i]=new_url
                 print("Updated url: \n %s to \n %s" % (old_url, new_url))
 
-                # get old and new product url
+                # get old product url
                 if "s3" in old_url:
-                    old_prod_url = old_url
+                    old_bucket_url["prod"] = old_url
 
             # 2. aws s3 sync to transfer payload data across buckets
-            if old_prod_url:
-                url_regex = re.compile('(s3:\/\/).*:80\/(.*)')
-                match = url_regex.search(old_prod_url)
-                if match:
-                    old_prod_real_url = "{}{}".format(match.group(1), match.group(2))
-                    new_prod_real_url = old_prod_real_url.replace(from_bucket, to_bucket)
-                    if not dry_run:
-                        sp.check_call("aws s3 sync %s %s" % (old_prod_real_url, new_prod_real_url), shell=True)
+            for key,old_url in old_bucket_url.items():
+                if old_url:
+                    url_regex = re.compile('(s3:\/\/).*:80\/(.*)')
+                    match = url_regex.search(old_url)
+                    if match:
+                        old_real_url = "{}{}".format(match.group(1), match.group(2))
+                        new_real_url = old_real_url.replace(from_bucket, to_bucket)
+                        if not dry_run:
+                            sp.check_call("aws s3 sync %s %s" % (old_real_url, new_real_url), shell=True)
+                    else:
+                        raise RuntimeError("Problem getting s3 %s url from ES metadata: %s, url: %s" % (key,dataset_md[id_key],old_url))
+                elif len(dataset_md["urls"])  == 0:
+                    print("Skipping aws s3 sync bucket migration for %s since %s contains only ES metadata" % (dataset_md[id_key],idx))
                 else:
-                    raise RuntimeError("Problem getting s3 product url from ES metadata: %s, url: %s" % (dataset_md[id_key],old_prod_url))
-            elif len(dataset_md["urls"])  == 0:
-                print("Skipping aws s3 sync bucket migration for %s since %s contains only ES metadata" % (dataset_md[id_key],idx))
-            else:
-                raise RuntimeError("Problem getting s3 product url from ES metadata: %s" % (dataset_md[id_key]))
+                    raise RuntimeError("Problem getting s3 product url from ES metadata: %s" % (dataset_md[id_key]))
 
 
             # 3. restore the updated indices in the target cluster grq
