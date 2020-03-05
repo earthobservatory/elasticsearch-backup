@@ -33,16 +33,17 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                     break
 
             # execute setup if we are at first iteration
-            if line_ind == 1 and not dry_run:
+            if line_ind == 1:
                 # create index
-                r = requests.put('http://%s:9200/%s' % (target_grq_ip,idx) )
-                if r.status_code != 200:
-                    j = r.json()
-                    if r.status_code == 400 and j.get('error', '').startswith("IndexAlreadyExists"):
-                        print("Created index %s " % idx)
-                        pass
-                    else:
-                        r.raise_for_status()
+                if not dry_run:
+                    r = requests.put('http://%s:9200/%s' % (target_grq_ip,idx) )
+                    if r.status_code != 200:
+                        j = r.json()
+                        if r.status_code == 400 and j.get('error', '').startswith("IndexAlreadyExists"):
+                            print("Created index %s " % idx)
+                            pass
+                        else:
+                            r.raise_for_status()
 
                 # put mapping and settings
                 with open(mapping_file) as f:
@@ -51,24 +52,24 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                     raise RuntimeError("More than two doctype found. Will not be able to know which to restore to.")
                 with open(settings_file) as f:
                     settings = json.load(f)
+
                 doctype = None
                 for dt in mapping[idx]['mappings']:
                     m = mapping[idx]['mappings'][dt]
                     if idx not in settings or 'settings' not in settings.get(idx, {}):
                         raise RuntimeError("Failed to find settings for index %s." % idx)
                     s = settings[idx]['settings']
-                    r = requests.put('http://%s:9200/%s/_mapping/%s' % (target_grq_ip,idx, dt), data=json.dumps(m))
-                    r.raise_for_status()
-                print("Updated mapping for %s " % idx)
+                    if not dry_run:
+                        r = requests.put('http://%s:9200/%s/_mapping/%s' % (target_grq_ip,idx, dt), data=json.dumps(m))
+                        r.raise_for_status()
+                        print("Updated mapping for %s " % idx)
 
-                r = requests.put('http://%s:9200/%s/_settings' % (target_grq_ip, idx), data=json.dumps(s))
-                print("Updated settings for %s " % idx)
-                doctype = dt
+                        r = requests.put('http://%s:9200/%s/_settings' % (target_grq_ip, idx), data=json.dumps(s))
+                        print("Updated settings for %s " % idx)
+                        doctype = dt
 
             dataset_md = json.loads(l)
             old_prod_url = ""
-            new_prod_url = ""
-
 
             # 1. edit metadata elasticsearch
             if len(dataset_md["urls"])  == 0:
@@ -92,20 +93,21 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                     old_prod_url = old_url
 
             # 2. aws s3 sync to transfer payload data across buckets
-            if not dry_run:
-                if old_prod_url:
-                    url_regex = re.compile('(s3:\/\/).*:80\/(.*)')
-                    match = url_regex.search(old_prod_url)
-                    if match:
-                        old_prod_real_url = "{}{}".format(match.group(1), match.group(2))
-                        new_prod_real_url = old_prod_real_url.replace(from_bucket, to_bucket)
+            if old_prod_url:
+                url_regex = re.compile('(s3:\/\/).*:80\/(.*)')
+                match = url_regex.search(old_prod_url)
+                if match:
+                    old_prod_real_url = "{}{}".format(match.group(1), match.group(2))
+                    new_prod_real_url = old_prod_real_url.replace(from_bucket, to_bucket)
+                    if not dry_run:
                         sp.check_call("aws s3 sync %s %s" % (old_prod_real_url, new_prod_real_url), shell=True)
-                    else:
-                        raise RuntimeError("Problem getting s3 product url from ES metadata: %s, url: %s" % (dataset_md[id_key],old_prod_url))
-                elif len(dataset_md["urls"])  == 0:
-                    print("Skipping aws s3 sync bucket migration for %s since %s contains only ES metadata" % (dataset_md[id_key],idx))
                 else:
-                    raise RuntimeError("Problem getting s3 product url from ES metadata: %s" % (dataset_md[id_key]))
+                    raise RuntimeError("Problem getting s3 product url from ES metadata: %s, url: %s" % (dataset_md[id_key],old_prod_url))
+            elif len(dataset_md["urls"])  == 0:
+                print("Skipping aws s3 sync bucket migration for %s since %s contains only ES metadata" % (dataset_md[id_key],idx))
+            else:
+                raise RuntimeError("Problem getting s3 product url from ES metadata: %s" % (dataset_md[id_key]))
+
 
             # 3. restore the updated indices in the target cluster grq
             es_put_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key])
