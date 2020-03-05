@@ -66,7 +66,7 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
 
                         r = requests.put('http://%s:9200/%s/_settings' % (target_grq_ip, idx), data=json.dumps(s))
                         print("Updated settings for %s " % idx)
-                        doctype = dt
+                    doctype = dt
 
             dataset_md = json.loads(l)
             old_prod_url = ""
