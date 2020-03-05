@@ -26,9 +26,10 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
             line_ind +=1
 
             # break out if num_entries requested reached
-            if line_ind > num_entries:
-                print("Breaking out as line_index : %s  > num_entries: %s" % (line_ind, num_entries))
-                break
+            if num_entries:
+                if line_ind > num_entries:
+                    print("Breaking out as line_index : %s  > num_entries: %s" % (line_ind, num_entries))
+                    break
 
             # execute setup if we are at first iteration
             if line_ind == 1 and not dry_run:
@@ -57,11 +58,11 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                     s = settings[idx]['settings']
                     r = requests.put('http://%s:9200/%s/_mapping/%s' % (target_grq_ip,idx, dt), data=json.dumps(m))
                     r.raise_for_status()
-                    print("Updated mapping for %s " % idx)
-                    r = requests.put('http://%s:9200/%s/_settings' % (target_grq_ip, idx), data=json.dumps(s))
-                    print("Updated settings for %s " % idx)
-                    doctype = dt
+                print("Updated mapping for %s " % idx)
 
+                r = requests.put('http://%s:9200/%s/_settings' % (target_grq_ip, idx), data=json.dumps(s))
+                print("Updated settings for %s " % idx)
+                doctype = dt
 
             dataset_md = json.loads(l)
             old_prod_url = ""
