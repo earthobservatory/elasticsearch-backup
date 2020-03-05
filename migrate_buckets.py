@@ -27,15 +27,17 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
 
             # break out if num_entries requested reached
             if line_ind > num_entries:
+                print("Breaking out as line_index : %s  > num_entries: %s" % (line_ind, num_entries))
                 break
 
             # execute setup if we are at first iteration
             if line_ind == 1 and not dry_run:
                 # create index
-                r = requests.put('http://localhost:9200/%s' % idx)
+                r = requests.put('http://%s:9200/%s' % (target_grq_ip,idx) )
                 if r.status_code != 200:
                     j = r.json()
                     if r.status_code == 400 and j.get('error', '').startswith("IndexAlreadyExists"):
+                        print("Created index %s " % idx)
                         pass
                     else:
                         r.raise_for_status()
@@ -55,8 +57,10 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                     s = settings[idx]['settings']
                     r = requests.put('http://%s:9200/%s/_mapping/%s' % (target_grq_ip,idx, dt), data=json.dumps(m))
                     r.raise_for_status()
+                    print("Updated mapping for %s " % idx)
                     r = requests.put('http://%s:9200/%s/_settings' % (target_grq_ip, idx), data=json.dumps(s))
                     r.raise_for_status()
+                    print("Updated settings for %s " % idx)
                     doctype = dt
 
 
