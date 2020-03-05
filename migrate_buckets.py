@@ -108,8 +108,10 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                     raise RuntimeError("Problem getting s3 product url from ES metadata: %s" % (dataset_md[id_key]))
 
             # 3. restore the updated indices in the target cluster grq
+            es_put_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key])
+            print("Putting metadata into %s " % es_put_url)
             if not dry_run:
-                r = requests.put('http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key]), data=l)
+                r = requests.put(es_put_url, data=l)
                 print("Updated ES metadata: %s " % dataset_md[id_key])
                 if r.status_code != 201:
                     print(r.status_code)
