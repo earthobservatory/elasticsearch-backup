@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, requests, json, argparse, subprocess as sp
+import os, requests, json, argparse, re, subprocess as sp
 
 
 
@@ -90,12 +90,18 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                 # get old and new product url
                 if "s3" in old_url:
                     old_prod_url = old_url
-                    new_prod_url = new_url
 
             # 2. aws s3 sync to transfer payload data across buckets
             if not dry_run:
                 if old_prod_url:
-                    sp.check_call("aws s3 sync %s %s" % (old_prod_url, new_prod_url), shell=True)
+                    url_regex = re.compile('(s3:\/\/).*:80\/(.*)')
+                    match = url_regex.search(old_prod_url)
+                    if match:
+                        old_prod_real_url = "{}{}".format(match.group(1), match.group(2))
+                        new_prod_real_url = old_prod_real_url.replace(from_bucket, to_bucket)
+                        sp.check_call("aws s3 sync %s %s" % (old_prod_real_url, new_prod_real_url), shell=True)
+                    else:
+                        raise RuntimeError("Problem getting s3 product url from ES metadata: %s, url: %s" % (dataset_md[id_key],old_prod_url))
                 elif len(dataset_md["urls"])  == 0:
                     print("Skipping aws s3 sync bucket migration for %s since %s contains only ES metadata" % (dataset_md[id_key],idx))
                 else:
