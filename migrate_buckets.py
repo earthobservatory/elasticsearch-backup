@@ -79,13 +79,13 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
                 old_url = dataset_md["browse_urls"][i]
                 new_url = old_url.replace(from_bucket, to_bucket)
                 dataset_md["browse_urls"][i]=new_url
-                print("Updated url: \n %s to \n %s".format(old_url, new_url))
+                print("Updated url: \n %s to \n %s" % (old_url, new_url))
 
             for i in range(len(dataset_md["urls"])):
                 old_url = dataset_md["urls"][i]
                 new_url = old_url.replace(from_bucket, to_bucket)
                 dataset_md["urls"][i]=new_url
-                print("Updated url: \n %s to \n %s".format(old_url, new_url))
+                print("Updated url: \n %s to \n %s" % (old_url, new_url))
 
                 # get old and new product url
                 if "s3" in old_url:
@@ -95,11 +95,11 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
             # 2. aws s3 sync to transfer payload data across buckets
             if not dry_run:
                 if old_prod_url:
-                    sp.check_call("aws s3 sync %s %s".format(old_prod_url, new_prod_url), shell=True)
+                    sp.check_call("aws s3 sync %s %s" % (old_prod_url, new_prod_url), shell=True)
                 elif len(dataset_md["urls"])  == 0:
                     print("Skipping aws s3 sync bucket migration for %s since %s contains only ES metadata" % (dataset_md[id_key],idx))
                 else:
-                    raise RuntimeError("Problem getting s3 product url from ES metadata: %s". format(dataset_md[id_key]))
+                    raise RuntimeError("Problem getting s3 product url from ES metadata: %s" % (dataset_md[id_key]))
 
             # 3. restore the updated indices in the target cluster grq
             if not dry_run:
