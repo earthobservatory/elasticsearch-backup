@@ -27,6 +27,7 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
 
             # break out if num_entries requested reached
             if num_entries:
+                num_entries = int(num_entries)
                 if line_ind > num_entries:
                     print("Breaking out as line_index : %s  > num_entries: %s" % (line_ind, num_entries))
                     break
@@ -128,7 +129,7 @@ def main():
     args = parser.parse_args()
     dry_run = not args.force
     migrate_buckets(args.from_bucket, args.to_bucket,args.backup_dir, args.target_grq_ip,
-                    dry_run=dry_run, num_entries=int(args.num_entries))
+                    dry_run=dry_run, num_entries=args.num_entries)
 
 
 if __name__ == "__main__":
