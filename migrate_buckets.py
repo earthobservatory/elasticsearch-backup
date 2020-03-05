@@ -81,12 +81,11 @@ def migrate_buckets(from_bucket, to_bucket, backup_dir, target_grq_ip, dry_run=T
             tags = dataset_md["metadata"].get("tags", '')
 
             if "opendataset" in tags:
-                print("Skipping opendataset data: %s, %s" % (dataset_md[id_key],dataset_md.get("browse_uels", [""])[0]))
+                print("Skipping opendataset data: %s, %s" % (dataset_md[id_key],dataset_md.get("browse_urls", [""])[0]))
                 continue
-            else:
-                print("Migrating data: %s" % (dataset_md[id_key]))
 
 
+            print("Migrating data: %s" % (dataset_md[id_key]))
             old_bucket_url = {"prod":"", "browse":""}
 
             # 1. edit metadata elasticsearch
