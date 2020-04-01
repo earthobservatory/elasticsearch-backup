@@ -110,7 +110,7 @@ def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_
             # This is for acquisitions to rename and update versions
             match = previous_id_regex.search(dataset_md["id"])
             if match:
-                es_del_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, new_idx, doctype, dataset_md[id_key])
+                es_del_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key])
                 print("Deleting metadata with %s " % es_del_url)
                 if not dry_run:
                     r = requests.delete(es_put_url)
