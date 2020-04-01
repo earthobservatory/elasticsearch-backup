@@ -115,10 +115,9 @@ def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_
                 if not dry_run:
                     r = requests.delete(es_del_url)
                     print("Deleted ES metadata: %s " % dataset_md[id_key])
-                    if r.status_code != 201:
+                    if r.status_code != 200:
                         print(r.status_code)
                         print(r.json())
-                        continue
                     else:
                         r.raise_for_status()
 
