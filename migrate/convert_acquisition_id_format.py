@@ -173,8 +173,6 @@ def main():
     parser = argparse.ArgumentParser(description="Backup all ElasticSearch indexes.")
     parser.add_argument('--grqip', dest='target_grq_ip', default='localhost',
                         help="ElasticSearch IP address to migrate to")
-    parser.add_argument('--new_idx', dest='new_idx', default='grq_v2.1_acquisition-s1-iw_slc',
-                        help="new grq index to transfer to")
     parser.add_argument('--backup_dir', dest='backup_dir', required=True,
                         help="the directory index to backup")
     parser.add_argument('--force', dest='force', action="store_true",
@@ -189,7 +187,7 @@ def main():
     #                 dry_run=dry_run, num_entries=args.num_entries)
 
     rename_acquisitions(backup_dir=args.backup_dir, target_grq_ip=args.target_grq_ip,
-                        new_idx=args.new_idx, met_updates={'version': 'v2.1', 'system_version':'v2.1'}, dry_run=dry_run,
+                        new_idx=None, met_updates={}, dry_run=dry_run,
                         num_entries=args.num_entries)
 
 
