@@ -189,7 +189,7 @@ def main():
     #                 dry_run=dry_run, num_entries=args.num_entries)
 
     rename_acquisitions(backup_dir=args.backup_dir, target_grq_ip=args.target_grq_ip,
-                        new_idx=args.new_idx, met_updates={'version': '2.1', 'system_version':'2.1'}, dry_run=dry_run,
+                        new_idx=args.new_idx, met_updates={'version': 'v2.1', 'system_version':'v2.1'}, dry_run=dry_run,
                         num_entries=args.num_entries)
 
 
