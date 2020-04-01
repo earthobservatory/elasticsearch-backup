@@ -15,7 +15,7 @@ You will then get the /data/acq_backup/grq_v2.0_acquisition-s1-iw_slc/grq_v2.0_a
 previous_id_regex = re.compile('acquisition-Sentinel.*_IW-esa_scihub')
 new_id_fmt = 'acquisition-{}-esa_scihub'
 
-def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_grq_ip='', new_idx ='grq_v2.1_acquisition-s1-iw_slc', met_updates={'version':'2.1'},dry_run=True, num_entries=None):
+def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_grq_ip='', new_idx ='grq_v2.1_acquisition-s1-iw_slc', met_updates={'version':'2.1'},dry_run=True, num_entries=None, delete=False, put=False):
     """Restore ES index from backup docs and mapping."""
 
     id_key = 'id'
@@ -110,16 +110,17 @@ def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_
             # This is for acquisitions to rename and update versions
             match = previous_id_regex.search(dataset_md["id"])
             if match:
-                es_del_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key])
-                print("Deleting metadata with %s " % es_del_url)
-                if not dry_run:
-                    r = requests.delete(es_del_url)
-                    print("Deleted ES metadata: %s " % dataset_md[id_key])
-                    if r.status_code != 200:
-                        print(r.status_code)
-                        print(r.json())
-                    else:
-                        r.raise_for_status()
+                if delete and not dry_run:
+                    es_del_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key])
+                    print("Deleting metadata with %s " % es_del_url)
+                    if not dry_run:
+                        r = requests.delete(es_del_url)
+                        print("Deleted ES metadata: %s " % dataset_md[id_key])
+                        if r.status_code != 200:
+                            print(r.status_code)
+                            print(r.json())
+                        else:
+                            r.raise_for_status()
 
                 dataset_md.update({"id": new_id_fmt.format(dataset_md['metadata']['title'])})
                 dataset_md.update(met_updates)
@@ -172,13 +173,14 @@ def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_
             es_put_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, new_idx, doctype, dataset_md[id_key])
             print("Putting metadata into %s " % es_put_url)
             if not dry_run:
-                r = requests.put(es_put_url, data=json.dumps(dataset_md))
-                print("Updated ES metadata: %s " % dataset_md[id_key])
-                if r.status_code != 201:
-                    print(r.status_code)
-                    print(r.json())
-                    continue
-                else: r.raise_for_status()
+                if put:
+                    r = requests.put(es_put_url, data=json.dumps(dataset_md))
+                    print("Updated ES metadata: %s " % dataset_md[id_key])
+                    if r.status_code != 201:
+                        print(r.status_code)
+                        print(r.json())
+                        continue
+                    else: r.raise_for_status()
 
 
 
@@ -193,6 +195,10 @@ def main():
                         help="will execute if flag is up, if not, a dry run is performed")
     parser.add_argument('--num_limit', dest='num_entries', default=None,
                         help="number of first x entries to limit the transfer (for testing)")
+    parser.add_argument('--delete', dest='delete', action="store_true",
+                        help="to delete old indices")
+    parser.add_argument('--put', dest='put', action="store_true",
+                        help="to put new indices")
     args = parser.parse_args()
     dry_run = not args.force
 
@@ -202,7 +208,7 @@ def main():
 
     rename_acquisitions(backup_dir=args.backup_dir, target_grq_ip=args.target_grq_ip,
                         new_idx=None, met_updates={}, dry_run=dry_run,
-                        num_entries=args.num_entries)
+                        num_entries=args.num_entries, delete=args.delete, put=args.put)
 
 
 if __name__ == "__main__":
