@@ -113,7 +113,7 @@ def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_
                 es_del_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, idx, doctype, dataset_md[id_key])
                 print("Deleting metadata with %s " % es_del_url)
                 if not dry_run:
-                    r = requests.delete(es_put_url)
+                    r = requests.delete(es_del_url)
                     print("Deleted ES metadata: %s " % dataset_md[id_key])
                     if r.status_code != 201:
                         print(r.status_code)
