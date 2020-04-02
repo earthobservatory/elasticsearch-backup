@@ -171,16 +171,19 @@ def rename_acquisitions(from_bucket=None, to_bucket=None, backup_dir='', target_
 
             # 3. restore the updated indices in the target cluster grq
             es_put_url = 'http://%s:9200/%s/%s/%s' % (target_grq_ip, new_idx, doctype, dataset_md[id_key])
-            print("Putting metadata into %s " % es_put_url)
+#            print("Putting metadata into %s " % es_put_url)
             if not dry_run:
                 if put:
-                    r = requests.put(es_put_url, data=json.dumps(dataset_md))
-                    print("Updated ES metadata: %s " % dataset_md[id_key])
-                    if r.status_code != 201:
-                        print(r.status_code)
-                        print(r.json())
-                        continue
-                    else: r.raise_for_status()
+                    r_get = requests.get(es_put_url)
+                    if (r_get.status_code != 200):
+                        print("Putting metadata into %s " % es_put_url)
+                        r = requests.put(es_put_url, data=json.dumps(dataset_md))
+                        print("Updated ES metadata: %s " % dataset_md[id_key])
+                        if r.status_code != 201:
+                            print(r.status_code)
+                            print(r.json())
+                            continue
+                        else: r.raise_for_status()
 
 
 
